@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Веб против мишек</title>
+  <link rel="icon" type="image/png" href="./sonic.jpg">
+  <style>
+    * {
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: linear-gradient(to top, #a0e9ff, #ffffff);
+    }
+
+    #background-text {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image:
+        repeating-linear-gradient(
+          45deg,
+          transparent,
+          transparent 40px,
+          rgba(255,255,255,0.1) 40px,
+          rgba(255,255,255,0.1) 80px
+        );
+      font-family: monospace;
+      color: rgba(0,0,0,0.05);
+      font-size: 32px;
+      white-space: pre-wrap;
+      line-height: 2em;
+      overflow: hidden;
+      padding: 40px;
+    }
+
+    #game {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+    }
+
+    #sonic {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      transition: transform 0.1s;
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    .cake {
+      position: absolute;
+      width: 50px;
+      z-index: 2;
+    }
+
+    .enemy {
+      position: absolute;
+      width: 100px;
+      z-index: 2;
+    }
+
+    .boom {
+      animation: boomAnim 0.5s forwards;
+    }
+
+    @keyframes boomAnim {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(2); opacity: 0; }
+    }
+
+    #scoreboard {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 24px;
+      font-family: sans-serif;
+      background: rgba(255,255,255,0.6);
+      padding: 10px 20px;
+      border-radius: 10px;
+      z-index: 1000;
+    }
+
+    #lives {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 24px;
+      font-family: sans-serif;
+      background: rgba(255,255,255,0.6);
+      padding: 10px 20px;
+      border-radius: 10px;
+      z-index: 1000;
+    }
+
+    #startButton, #result {
+      position: absolute;
+      top: 35%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 28px;
+      padding: 20px 40px;
+      background: linear-gradient(to right, #007bff, #00d4ff);
+      color: white;
+      border: none;
+      border-radius: 15px;
+      cursor: pointer;
+      z-index: 1001;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      transition: transform 0.3s ease;
+    }
+
+    #startButton, #result {
+      top: 45%;
+    }
+
+    #startButton:hover, #result button:hover {
+      transform: translate(-50%, -50%) scale(1.05);
+    }
+
+    #result button:hover {
+      transform: scale(1.05);
+    }
+
+    #result {
+      display: none;
+      background-color: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 40px;
+      text-align: center;
+    }
+
+    #result button {
+      margin-top: 20px;
+      font-size: 22px;
+      padding: 10px 30px;
+      border-radius: 10px;
+      border: none;
+      background: #00c2ff;
+      color: white;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    #result button:hover {
+      background: #009edb;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="background-text"></div>
+  <div id="game">
+    <div id="scoreboard">Очки: 0</div>
+    <div id="lives">Жизни: 3</div>
+    <img id="sonic" src="./Sonic_1991.png" />
+    <button id="startButton">Начать игру</button>
+    <div id="result"></div>
+    <audio id="bgMusic" src="./song.mp3" loop></audio>
+  </div>
+  <script>
+    const game = document.getElementById("game");
+    const sonic = document.getElementById("sonic");
+    const scoreboard = document.getElementById("scoreboard");
+    const livesDisplay = document.getElementById("lives");
+    const startButton = document.getElementById("startButton");
+    const result = document.getElementById("result");
+    const music = document.getElementById("bgMusic");
+    const background = document.getElementById("background-text");
+    background.innerHTML = Array(100).fill("Вебка Вампик").join(" ");
+
+    let score = 0;
+    let lives = 3;
+    let gameInterval;
+    let gameOver = false;
+
+    function startGame() {
+      score = 0;
+      lives = 3;
+      scoreboard.textContent = "Очки: 0";
+      livesDisplay.textContent = "Жизни: 3";
+      result.style.display = "none";
+      startButton.style.display = "none";
+      gameOver = false;
+      music.currentTime = 0;
+      music.play();
+      gameInterval = setInterval(spawnEnemy, 2000);
+    }
+
+    function launchCakeFireworks() {
+      for (let i = 0; i < 20; i++) {
+        const cake = document.createElement("img");
+        cake.src = "./cake.png";
+        cake.classList.add("cake");
+        cake.style.left = (window.innerWidth / 2) + "px";
+        cake.style.top = (window.innerHeight / 2) + "px";
+        game.appendChild(cake);
+
+        const angle = Math.random() * 2 * Math.PI;
+        const speed = 3 + Math.random() * 3;
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed;
+
+        let x = window.innerWidth / 2;
+        let y = window.innerHeight / 2;
+
+        const interval = setInterval(() => {
+          x += vx * 5;
+          y += vy * 5;
+          cake.style.left = x + "px";
+          cake.style.top = y + "px";
+          cake.style.opacity = parseFloat(cake.style.opacity || 1) - 0.02;
+
+          if (x < 0 || x > window.innerWidth || y < 0 || y > window.innerHeight || parseFloat(cake.style.opacity) <= 0) {
+            clearInterval(interval);
+            cake.remove();
+          }
+        }, 16);
+      }
+    }
+
+    function endGame() {
+      clearInterval(gameInterval);
+      gameOver = true;
+      music.pause();
+      document.querySelectorAll(".enemy, .cake").forEach(el => el.remove());
+      result.style.display = "block";
+      result.innerHTML = `
+        <h2>Игра окончена!</h2>
+        <p>Ваш результат: <strong>${score}</strong></p>
+        <button onclick='startGame()'>Сыграть ещё</button>
+      `;
+      launchCakeFireworks();
+    }
+
+    function spawnEnemy() {
+      const enemy = document.createElement("img");
+      enemy.src = "./bear.png";
+      enemy.classList.add("enemy");
+      enemy.dataset.hit = "false";
+      const startX = Math.random() * (window.innerWidth - 100);
+      enemy.style.left = startX + "px";
+      enemy.style.top = "0px";
+      game.appendChild(enemy);
+
+      let y = 0;
+      const fallInterval = setInterval(() => {
+        if (gameOver) {
+          clearInterval(fallInterval);
+          return;
+        }
+        y += 2;
+        enemy.style.top = y + "px";
+
+        if (y > window.innerHeight - 100) {
+          clearInterval(fallInterval);
+          enemy.remove();
+          lives--;
+          livesDisplay.textContent = `Жизни: ${lives}`;
+          if (lives <= 0) endGame();
+        }
+      }, 16);
+
+      enemy.dataset.interval = fallInterval;
+    }
+
+    game.addEventListener("click", (e) => {
+      if (gameOver || e.target.id === "startButton") return;
+
+      const cake = document.createElement("img");
+      cake.src = "./cake.png";
+      cake.classList.add("cake");
+
+      const sonicRect = sonic.getBoundingClientRect();
+      const startX = sonicRect.left + 30;
+      const startY = sonicRect.top + 10;
+
+      const targetX = e.clientX;
+      const targetY = e.clientY;
+
+      cake.style.left = startX + "px";
+      cake.style.top = startY + "px";
+      game.appendChild(cake);
+
+      const dx = targetX - startX;
+      const dy = targetY - startY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const speed = 8;
+      const vx = (dx / distance) * speed;
+      const vy = (dy / distance) * speed;
+
+      const interval = setInterval(() => {
+        const rect = cake.getBoundingClientRect();
+        let x = rect.left + vx;
+        let y = rect.top + vy;
+
+        cake.style.left = x + "px";
+        cake.style.top = y + "px";
+
+        document.querySelectorAll(".enemy").forEach((enemy) => {
+          const enemyRect = enemy.getBoundingClientRect();
+          const cakeRect = cake.getBoundingClientRect();
+
+          if (
+            enemy.dataset.hit !== "true" &&
+            cakeRect.left < enemyRect.right &&
+            cakeRect.right > enemyRect.left &&
+            cakeRect.top < enemyRect.bottom &&
+            cakeRect.bottom > enemyRect.top
+          ) {
+            clearInterval(interval);
+            clearInterval(parseInt(enemy.dataset.interval));
+            enemy.classList.add("boom");
+            enemy.dataset.hit = "true";
+            cake.classList.add("boom");
+            score++;
+            scoreboard.textContent = `Очки: ${score}`;
+            setTimeout(() => {
+              enemy.remove();
+              cake.remove();
+            }, 500);
+          }
+        });
+
+        if (
+          x < 0 ||
+          x > window.innerWidth ||
+          y < 0 ||
+          y > window.innerHeight
+        ) {
+          clearInterval(interval);
+          cake.remove();
+        }
+      }, 16);
+    });
+
+    startButton.addEventListener("click", startGame);
+  </script>
+</body>
+</html>
