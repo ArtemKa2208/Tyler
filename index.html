@@ -69,7 +69,7 @@
       z-index: 2;
     }
 
-    .enemy {
+    .enemy, .bad {
       position: absolute;
       width: clamp(60px, 16vw, 100px);
       z-index: 2;
@@ -130,7 +130,6 @@
       transform: scale(1.05);
     }
 
-
     #result {
       display: none;
       background-color: rgba(0, 0, 0, 0.8);
@@ -155,6 +154,24 @@
 
     #result button:hover {
       background: #009edb;
+    }
+
+    /* Новый эффект красной вспышки */
+    .red-flash {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 0, 0, 0.5);
+      z-index: 10000;
+      pointer-events: none;
+      animation: redFlashAnim 0.7s forwards;
+    }
+
+    @keyframes redFlashAnim {
+      from { opacity: 1; }
+      to { opacity: 0; }
     }
   </style>
 </head>
@@ -183,7 +200,18 @@
     let score = 0;
     let lives = 3;
     let gameInterval;
+    let badCharacterInterval; // Интервал для нового персонажа
     let gameOver = false;
+
+    // Функция для создания эффекта красной вспышки
+    function triggerRedEffect() {
+      const redDiv = document.createElement("div");
+      redDiv.classList.add("red-flash");
+      document.body.appendChild(redDiv);
+      setTimeout(() => {
+        redDiv.remove();
+      }, 300);
+    }
 
     function startGame() {
       score = 0;
@@ -196,6 +224,7 @@
       music.currentTime = 0;
       music.play();
       gameInterval = setInterval(spawnEnemy, 1000);
+      badCharacterInterval = setInterval(spawnBadCharacter, 5000);
     }
 
     function launchCakeFireworks() {
@@ -232,9 +261,10 @@
 
     function endGame() {
       clearInterval(gameInterval);
+      clearInterval(badCharacterInterval);
       gameOver = true;
       music.pause();
-      document.querySelectorAll(".enemy, .cake").forEach(el => el.remove());
+      document.querySelectorAll(".enemy, .cake, .bad").forEach(el => el.remove());
       result.style.display = "block";
       result.innerHTML = `
         <h2>Игра окончена!</h2>
@@ -275,6 +305,34 @@
       enemy.dataset.interval = fallInterval;
     }
 
+    function spawnBadCharacter() {
+      const bad = document.createElement("img");
+      bad.src = "./danger.png"; // изображение нового персонажа
+      bad.classList.add("bad");
+      bad.dataset.hit = "false";
+      const startX = Math.random() * (window.innerWidth - 100);
+      bad.style.left = startX + "px";
+      bad.style.top = "0px";
+      game.appendChild(bad);
+
+      let y = 0;
+      const fallInterval = setInterval(() => {
+        if (gameOver) {
+          clearInterval(fallInterval);
+          return;
+        }
+        y += 2;
+        bad.style.top = y + "px";
+
+        if (y > window.innerHeight) {
+          clearInterval(fallInterval);
+          bad.remove();
+        }
+      }, 16);
+
+      bad.dataset.interval = fallInterval;
+    }
+
     game.addEventListener("click", (e) => {
       if (gameOver || e.target.id === "startButton") return;
 
@@ -308,26 +366,36 @@
         cake.style.left = x + "px";
         cake.style.top = y + "px";
 
-        document.querySelectorAll(".enemy").forEach((enemy) => {
-          const enemyRect = enemy.getBoundingClientRect();
+        document.querySelectorAll(".enemy, .bad").forEach((target) => {
+          const targetRect = target.getBoundingClientRect();
           const cakeRect = cake.getBoundingClientRect();
 
           if (
-            enemy.dataset.hit !== "true" &&
-            cakeRect.left < enemyRect.right &&
-            cakeRect.right > enemyRect.left &&
-            cakeRect.top < enemyRect.bottom &&
-            cakeRect.bottom > enemyRect.top
+            target.dataset.hit !== "true" &&
+            cakeRect.left < targetRect.right &&
+            cakeRect.right > targetRect.left &&
+            cakeRect.top < targetRect.bottom &&
+            cakeRect.bottom > targetRect.top
           ) {
             clearInterval(interval);
-            clearInterval(parseInt(enemy.dataset.interval));
-            enemy.classList.add("boom");
-            enemy.dataset.hit = "true";
+            clearInterval(parseInt(target.dataset.interval));
+            target.classList.add("boom");
+            target.dataset.hit = "true";
             cake.classList.add("boom");
-            score++;
-            scoreboard.textContent = `Очки: ${score}`;
+
+            if (target.classList.contains("enemy")) {
+              score++;
+              scoreboard.textContent = `Очки: ${score}`;
+            } else if (target.classList.contains("bad")) {
+              lives--;
+              livesDisplay.textContent = `Жизни: ${lives}`;
+              triggerRedEffect();
+              if (lives <= 0) {
+                endGame();
+              }
+            }
             setTimeout(() => {
-              enemy.remove();
+              target.remove();
               cake.remove();
             }, 500);
           }
