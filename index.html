@@ -546,7 +546,7 @@
       box-shadow: 8px 8px 16px rgba(0,0,0,0.15);
       transition: transform 0.3s ease;
       text-align: center;
-      font-family: 'Comic Sans MS', cursive, sans-serif;
+      /* font-family: 'Comic Sans MS', sans-serif; */
     }
 
     #startButton {
@@ -598,7 +598,7 @@
       box-shadow:
         inset 1px 1px 2px rgba(255, 255, 255, 0.8),
         4px 4px 8px rgba(0, 0, 0, 0.2);
-      font-family: 'Comic Sans MS', cursive, sans-serif;
+      /* font-family: 'Comic Sans MS', normal, sans-serif; */
       font-weight: 600;
     }
 
@@ -630,10 +630,10 @@
 <body>
   <div id="background-text"></div>
   <div id="game">
-    <div id="scoreboard">Очки: 0</div>
-    <div id="lives">Жизни: 3</div>
+    <div id="scoreboard">Points: 0</div>
+    <div id="lives">Lives: 3</div>
     <img id="tyler" src="./tyler.png" />
-    <button id="startButton">Начать игру</button>
+    <button id="startButton">Start the game</button>
     <div id="result"></div>
     <audio id="bgMusic" src="./Pixies - Where Is My Mind.mp3" loop></audio>
   </div>
@@ -724,9 +724,9 @@
       document.querySelectorAll(".enemy, .brick, .bad").forEach(el => el.remove());
       result.style.display = "block";
       result.innerHTML = `
-        <h2>Игра окончена!</h2>
-        <p>Ваш результат: <strong>${score}</strong></p>
-        <button onclick='startGame()'>Сыграть ещё</button>
+        <h2>Game over!</h2>
+        <p>Your result: <strong>${score}</strong></p>
+        <button onclick='startGame()'>Play it again</button>
       `;
       launchbrickFireworks();
     }
@@ -759,7 +759,7 @@
           clearInterval(fallInterval);
           enemy.remove();
           lives--;
-          livesDisplay.textContent = `Жизни: ${lives}`;
+          livesDisplay.textContent = `Lives: ${lives}`;
           if (lives <= 0) endGame();
         }
       }, 16);
@@ -847,10 +847,10 @@
 
             if (target.classList.contains("enemy")) {
               score++;
-              scoreboard.textContent = `Очки: ${score}`;
+              scoreboard.textContent = `Points: ${score}`;
             } else if (target.classList.contains("bad")) {
               lives--;
-              livesDisplay.textContent = `Жизни: ${lives}`;
+              livesDisplay.textContent = `Lives: ${lives}`;
               triggerRedEffect();
               if (lives <= 0) {
                 endGame();
@@ -863,7 +863,6 @@
           }
         });
 
-        // Удаляем «пулю», если она вышла за пределы экрана
         if (
           x < 0 ||
           x > window.innerWidth ||
@@ -878,7 +877,6 @@
 
     startButton.addEventListener("click", startGame);
 
-    // Если игра разворачивается в Telegram WebApp
     if (window.Telegram && Telegram.WebApp) {
       Telegram.WebApp.ready();
     }
