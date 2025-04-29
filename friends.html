@@ -1,0 +1,559 @@
+<!-- <!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Catch the Soap с анимацией игрока</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body,html{width:100%;height:100%;overflow:hidden;font-family:sans-serif}
+    #game{
+      position:relative;
+      width:100vw;height:100vh;
+      /* background:
+        url('./background3.png') center/contain repeat,
+        linear-gradient(to top,#88c0d0,#eceff4); */
+      background-repeat: repeat;
+      background-image: url('./background3.png');
+      background-position: center;
+      background-size: 300px;
+    }
+    #platform{
+      position:absolute;
+      top:130px;
+      left:0;
+      width:100%;
+      height: 10px;
+      background:url('./iron.png') center/contain repeat;
+      /* background:#1d1c1b; */
+      box-shadow: 11px 17px 5px 0px rgba(0, 0, 0, 0.3);
+      z-index:400;
+    }
+
+    #floor {
+      position:absolute;
+      bottom: 0px;
+      left:0;
+      width:100%;
+      height:26px;
+      background:url('./stone5.png') center/contain repeat;
+      /* background:#2c2c2b; */
+      box-shadow: inset -2px -9px 6px 8px rgb(0 0 0 / 50%);;
+      z-index:400;
+    }
+  
+    #thrower{
+      position:absolute;
+      top:40px; left:50%; transform:translateX(-50%);
+      width:40px;height:90px;
+      user-select:none;pointer-events:none;
+      z-index:450;
+    }
+    /* Игрок — теперь тоже img с сменой src */
+    #player{
+      position:absolute;
+      bottom:20px; left:50%; transform:translateX(-50%);
+      width: 50px;height:100px;
+      user-select:none;pointer-events:none;
+      z-index:450;
+    }
+    .item{
+      position:absolute;
+      width:30px;height:30px;
+      pointer-events:none;z-index:500;
+    }
+    #score,#lives{
+      position:absolute;top:10px;padding:5px 10px;
+      background:rgba(0,0,0,0.5);color:#fff;border-radius:4px;
+      font-size:1.2rem;z-index:1001;
+    }
+    #score{left:10px}#lives{right:10px}
+    .red-flash{
+      position:fixed;top:0;left:0;width:100%;height:100%;
+      background:rgba(255,0,0,0.4);pointer-events:none;
+      animation:redFade .4s ease-out forwards;
+      z-index:1002;
+    }
+    @keyframes redFade{to{opacity:0}}
+    #overlay{
+      position:absolute;top:0;left:0;width:100%;height:100%;
+      background:rgba(0,0,0,0.7);
+      display:flex;flex-direction:column;
+      justify-content:center;align-items:center;
+      color:#fff;font-size:1.5rem;
+      visibility:hidden;z-index:1003;
+    }
+    #overlay.visible{visibility:visible}
+    #overlay button{
+      margin-top:1rem;padding:.6rem 1.2rem;
+      font-size:1rem;cursor:pointer;
+      border:none;border-radius:4px;
+      background:#81a1c1;color:#2e3440;
+    }
+    #overlay button:hover{background:#5e81ac}
+    .back-btn{
+      position:absolute;top:10px;left:50%;
+      transform:translateX(-50%);
+      padding:5px 10px;
+      background:#4c566a;color:#eceff4;
+      border:none;border-radius:4px;
+      cursor:pointer;z-index:1004;
+    }
+  </style>
+</head>
+<body>
+  <div id="game">
+    <div id="platform"></div>
+    <div id="floor"> </div>
+    <button class="back-btn" onclick="location.href='menu.html'">← Меню</button>
+    <div id="score">Points: 0</div>
+    <div id="lives">Lives: 3</div>
+
+    <img id="thrower" src="run1.png" alt="Thrower">
+    <img id="player"  src="idle.png" alt="Player">
+
+    <div id="overlay">
+      <div id="finalText">Игра окончена!</div>
+      <button id="btnRestart">Сыграть ещё</button>
+      <button onclick="location.href='menu.html'">← Меню</button>
+    </div>
+    <audio id="bgMusic" src="./Pixies - Where Is My Mind.mp3" loop></audio>
+  </div>
+
+  <script>
+    const thrower = document.getElementById('thrower');
+    const player  = document.getElementById('player');
+    const scoreEl = document.getElementById('score');
+    const livesEl = document.getElementById('lives');
+    const overlay = document.getElementById('overlay');
+    const restart = document.getElementById('btnRestart');
+    const music = document.getElementById("bgMusic");
+    const W = innerWidth, H = innerHeight;
+    const playerW = 80;
+
+    let px = W/2 - playerW/2,
+        tx = W/2 - playerW/2,
+        tvx = 3,
+        score = 0,
+        lives = 3,
+        gameOver = false;
+
+    const items = [];
+    const keys = {};
+
+    // кадры для игрока
+    const idleFrame  = 'idle.png';
+    const stepFrames = ['step1.png','step2.png'];
+    let stepIdx = 0;
+    let lastStepTime = 0;
+
+    // переключать ноги каждые 200ms
+    function updatePlayerSprite(now) {
+      // если идём
+      if (keys['ArrowLeft']||keys['a']||keys['ArrowRight']||keys['d']) {
+        if (now - lastStepTime > 200) {
+          stepIdx = 1 - stepIdx;
+          player.src = stepFrames[stepIdx];
+          lastStepTime = now;
+        }
+      } else {
+        // стоим
+        player.src = idleFrame;
+      }
+    }
+
+    // ваши старые спрайты для thrower
+    const runFrames = ['run1.png','run2.png'];
+    let runFrameIdx = 0;
+    setInterval(()=>{
+      if (gameOver) return;
+      runFrameIdx = 1 - runFrameIdx;
+      thrower.src = runFrames[runFrameIdx];
+    },300);
+
+    window.addEventListener('keydown', e => keys[e.key]=true);
+    window.addEventListener('keyup',   e => keys[e.key]=false);
+
+    function flashRed(){
+      const f = document.createElement('div');
+      f.className='red-flash';
+      document.body.appendChild(f);
+      f.addEventListener('animationend',()=>f.remove());
+    }
+
+    function spawnItem(){
+      if(gameOver) return;
+      const type = Math.random()<0.6?'soap':'brick';
+      const img  = document.createElement('img');
+      img.src    = type==='soap'?'brick.png':'real-brick.png';
+      img.className='item';
+      const x0 = tx + playerW/4 + Math.random()*(playerW/2);
+      img.style.left = x0+'px';
+      img.style.top  = '120px';
+      game.appendChild(img);
+      items.push({el:img,type,y:120,vy:type==='brick'?6:4});
+      setTimeout(spawnItem,800+Math.random()*700);
+    }
+
+    function loop(now=0){
+      if(gameOver) return;
+
+      // проходим спрайты игрока
+      updatePlayerSprite(now);
+
+      // бросающий
+      tx += tvx;
+      if(tx<0||tx>W-playerW) tvx*=-1;
+      thrower.style.left = tx+'px';
+
+      // игрок
+      if(keys['ArrowLeft']||keys['a'])  px-=7;
+      if(keys['ArrowRight']||keys['d']) px+=7;
+      px = Math.max(0,Math.min(W-playerW,px));
+      player.style.left = px+'px';
+
+      // предметы
+      for(let i=items.length-1;i>=0;i--){
+        const it = items[i];
+        it.y += it.vy;
+        it.el.style.top = it.y+'px';
+        const pr = player.getBoundingClientRect();
+        const ir = it.el.getBoundingClientRect();
+        if(pr.left<ir.right && pr.right>ir.left &&
+           pr.top<ir.bottom && pr.bottom>ir.top){
+          if(it.type==='soap'){
+            score++; scoreEl.textContent=`Points: ${score}`;
+          } else {
+            lives--; livesEl.textContent=`Lives: ${lives}`;
+            flashRed();
+            if(lives<=0) return endGame();
+          }
+          it.el.remove(); items.splice(i,1);
+          continue;
+        }
+        if(it.y>H){
+          if(it.type==='soap'){
+            lives--; livesEl.textContent=`Lives: ${lives}`;
+            flashRed();
+            if(lives<=0) return endGame();
+          }
+          it.el.remove(); items.splice(i,1);
+        }
+      }
+
+      requestAnimationFrame(loop);
+    }
+
+    function endGame(){
+      gameOver = true;
+      document.getElementById('finalText').textContent=`Ваш счёт: ${score}`;
+      overlay.classList.add('visible');
+      music.pause();
+    }
+
+    restart.onclick=()=>{
+      items.forEach(o=>o.el.remove());
+      items.length=0;
+      score=0;lives=3;gameOver=false;
+      scoreEl.textContent='Points: 0';
+      livesEl.textContent='Lives: 3';
+      overlay.classList.remove('visible');
+      px=W/2-playerW/2;tx=px;
+      stepIdx=0;lastStepTime=0;
+      player.src = idleFrame;
+      spawnItem(); loop();
+    };
+
+    // старт
+    spawnItem(); loop();
+  </script>
+</body>
+</html> -->
+
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Catch the Soap</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body,html{width:100%;height:100%;overflow:hidden;font-family:sans-serif}
+    #game{
+      position:relative;width:100vw;height:100vh;
+      background-repeat:repeat;
+      background-image:url('./background3.png');
+      background-position:center;
+      background-size:300px;
+    }
+    #platform{
+      position:absolute;top:130px;left:0;width:100%;height:9px;
+      background:url('./iron.png') center/contain repeat;
+      box-shadow:11px 17px 5px 0px rgba(0,0,0,0.3);
+      z-index:400;
+    }
+    #floor{
+      position:absolute;bottom:0px;left:0;width:100%;height:26px;
+      background:url('./stone5.png') center/contain repeat;
+      box-shadow:inset -2px -9px 6px 8px rgb(0 0 0 / 50%);
+      z-index:400;
+    }
+    #thrower, #player{
+      position:absolute;user-select:none;pointer-events:none;z-index:450;
+    }
+    #thrower{top:40px;left:50%;transform:translateX(-50%);width:40px;height:90px;}
+    #player{bottom:20px;left:50%;transform:translateX(-50%);width:50px;height:100px;}
+    .item{
+      position:absolute;width:30px;height:30px;pointer-events:none;z-index:500;
+    }
+    #score,#lives{
+      position:absolute;top:10px;padding:5px 10px;
+      background:rgba(0,0,0,0.5);color:#fff;border-radius:4px;
+      font-size:1.2rem;z-index:1001;
+    }
+    #score{left:10px}
+    #lives{right:10px}
+    .red-flash{
+      position:fixed;top:0;left:0;width:100%;height:100%;
+      background:rgba(255,0,0,0.4);pointer-events:none;
+      animation:redFade .4s ease-out forwards;
+      z-index:1002;
+    }
+    @keyframes redFade{to{opacity:0}}
+    #overlay{
+      position:absolute;top:0;left:0;width:100%;height:100%;
+      background:rgba(0,0,0,0.7);
+      display:flex;flex-direction:column;justify-content:center;align-items:center;
+      color:#fff;
+      font-size:2.5rem;
+      visibility:visible;
+      z-index:1003;
+    }
+    #overlay button{
+      margin-top:1rem;padding:.6rem 1.2rem;
+      font-size:1rem;cursor:pointer;
+      border:none;
+      border-radius:8px;
+      background:#18110d;
+      color:#bababa;
+      font-size: 24px;
+    }
+    #overlay button:hover{background:#5e81ac}
+    .back-btn{
+      position:absolute;top:10px;left:50%;transform:translateX(-50%);
+      padding:5px 10px;background:#4c566a;color:#eceff4;
+      border:none;border-radius:4px;cursor:pointer;z-index:1004;
+    }
+
+    #overlay_box {
+      background-color: #4c4d4d45;;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px;
+      border-radius: 16px;
+      border: 2px solid grey;
+    }
+  </style>
+</head>
+
+<body>
+<div id="game">
+  <div id="platform"></div>
+  <div id="floor"></div>
+  <div id="score">Points: 0</div>
+  <div id="lives">Lives: 3</div>
+
+  <img id="thrower" src="run1.png" alt="Thrower">
+  <img id="player" src="idle.png" alt="Player">
+
+  <div id="overlay">
+    <div id="overlay_box">
+      <div id="finalText">Catch the Soap</div>
+      <button id="btnStart">Start the game</button>
+      <button id="btnRestart" style="display:none;">Play again</button>
+      <button onclick="location.href='index.html'">Return to menu</button>
+    </div>
+  </div>
+
+  <audio id="bgMusic" src="./Pixies - Where Is My Mind.mp3" loop></audio>
+</div>
+
+<script>
+  const thrower = document.getElementById('thrower');
+  const player = document.getElementById('player');
+  const scoreEl = document.getElementById('score');
+  const livesEl = document.getElementById('lives');
+  const overlay = document.getElementById('overlay');
+  const startBtn = document.getElementById('btnStart');
+  const restart = document.getElementById('btnRestart');
+  const music = document.getElementById("bgMusic");
+
+  const W = innerWidth, H = innerHeight;
+  const playerW = 50;
+  const throwerW = 40;
+
+  let px = W/2 - playerW/2,
+      tx = W/2 - throwerW/2, 
+      tvx = 3,
+      score = 0,
+      lives = 3,
+      gameOver = false,
+      startTime = 0,
+      difficultyMultiplier = 1;
+
+  const items = [];
+  const keys = {};
+
+  const idleFrame = 'idle.png';
+  const stepFrames = ['step1.png', 'step2.png'];
+  let stepIdx = 0;
+  let lastStepTime = 0;
+
+  function updatePlayerSprite(now) {
+    if (keys['ArrowLeft'] || keys['a'] || keys['ArrowRight'] || keys['d']) {
+      if (now - lastStepTime > 200) {
+        stepIdx = 1 - stepIdx;
+        player.src = stepFrames[stepIdx];
+        lastStepTime = now;
+      }
+    } else {
+      player.src = idleFrame;
+    }
+  }
+
+  const runFrames = ['run1.png', 'run2.png'];
+  let runFrameIdx = 0;
+  setInterval(() => {
+    if (gameOver) return;
+    runFrameIdx = 1 - runFrameIdx;
+    thrower.src = runFrames[runFrameIdx];
+  }, 300);
+
+  window.addEventListener('keydown', e => keys[e.key] = true);
+  window.addEventListener('keyup', e => keys[e.key] = false);
+
+  function flashRed() {
+    const f = document.createElement('div');
+    f.className = 'red-flash';
+    document.body.appendChild(f);
+    f.addEventListener('animationend', () => f.remove());
+  }
+
+  function spawnItem() {
+    if (gameOver) return;
+    const type = Math.random() < 0.6 ? 'soap' : 'brick';
+    const img = document.createElement('img');
+    img.src = type === 'soap' ? 'brick.png' : 'real-brick.png';
+    img.className = 'item';
+    const x0 = tx + throwerW / 4 + Math.random() * (throwerW / 2);
+    img.style.left = x0 + 'px';
+    img.style.top = '120px';
+    game.appendChild(img);
+    items.push({ el: img, type, y: 120, vy: (type === 'brick' ? 6 : 4) * difficultyMultiplier });
+    const interval = (800 + Math.random() * 700) / difficultyMultiplier;
+    setTimeout(spawnItem, interval);
+  }
+
+  function loop(now = 0) {
+    if (gameOver) return;
+
+    updatePlayerSprite(now);
+
+    if (startTime) {
+      const elapsed = (now - startTime) / 1000;
+      const minutes = Math.floor(elapsed / 60);
+      difficultyMultiplier = Math.min(1 + minutes * 0.4, 3.5);
+    }
+
+    tx += tvx * difficultyMultiplier;
+    if (tx < throwerW / 2) { tx = throwerW / 2; tvx *= -1; }
+    if (tx > W - throwerW / 2) { tx = W - throwerW / 2; tvx *= -1; }
+    thrower.style.left = tx + 'px';
+
+    if (keys['ArrowLeft'] || keys['a']) px -= 7;
+    if (keys['ArrowRight'] || keys['d']) px += 7;
+   
+    px = Math.max(0 + playerW/2, Math.min(W - playerW/2, px));
+    player.style.left = px + 'px';
+
+    for (let i = items.length - 1; i >= 0; i--) {
+      const it = items[i];
+      it.y += it.vy;
+      it.el.style.top = it.y + 'px';
+      const pr = player.getBoundingClientRect();
+      const ir = it.el.getBoundingClientRect();
+      if (pr.left < ir.right && pr.right > ir.left && pr.top < ir.bottom && pr.bottom > ir.top) {
+        if (it.type === 'soap') {
+          score++; scoreEl.textContent = `Points: ${score}`;
+        } else {
+          lives--; livesEl.textContent = `Lives: ${lives}`;
+          flashRed();
+          if (lives <= 0) return endGame();
+        }
+        it.el.remove(); items.splice(i, 1);
+        continue;
+      }
+      if (it.y > H) {
+        if (it.type === 'soap') {
+          lives--; livesEl.textContent = `Lives: ${lives}`;
+          flashRed();
+          if (lives <= 0) return endGame();
+        }
+        it.el.remove(); items.splice(i, 1);
+      }
+    }
+
+    requestAnimationFrame(loop);
+  }
+
+  function endGame() {
+    gameOver = true;
+    document.getElementById('finalText').textContent = `Your score: ${score}`;
+    overlay.style.visibility = 'visible'; // показать оверлей
+    startBtn.style.display = 'none';
+    restart.style.display = 'block';
+    music.pause();
+  }
+
+  startBtn.onclick = () => {
+    overlay.style.visibility = 'hidden'; // скрыть весь оверлей
+    startBtn.style.display = 'none';
+    restart.style.display = 'none';
+    music.play();
+    score = 0; lives = 3; gameOver = false;
+    items.length = 0;
+    scoreEl.textContent = 'Points: 0';
+    livesEl.textContent = 'Lives: 3';
+    px = W/2 - playerW/2;
+    tx = px;
+    stepIdx = 0;
+    lastStepTime = 0;
+    player.src = idleFrame;
+    startTime = performance.now();
+    spawnItem();
+    loop();
+  };
+
+  restart.onclick = () => {
+    overlay.style.visibility = 'hidden'; // снова скрыть оверлей
+    music.play();
+    score = 0; lives = 3; gameOver = false;
+    items.forEach(item => item.el.remove());
+    items.length = 0;
+    scoreEl.textContent = 'Points: 0';
+    livesEl.textContent = 'Lives: 3';
+    px = W/2 - playerW/2;
+    tx = px;
+    stepIdx = 0;
+    lastStepTime = 0;
+    player.src = idleFrame;
+    startTime = performance.now();
+    spawnItem();
+    loop();
+  };
+</script>
+
+</body>
+</html>
+
+

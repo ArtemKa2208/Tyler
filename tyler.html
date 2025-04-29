@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tyler game</title>
+  <link rel="icon" type="image/png" href="./tyler.png">
+  <style>
+    * {
+      user-select: none;
+      -webkit-user-drag: none;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #ff9bba, #ffd6e2);
+      font-size: 16px;
+    }
+
+    #background-text {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image: url('./7a5de47e-f712-46ea-b307-3122f8f8e151.png');
+      background-size: contain;
+      font-family: monospace;
+      color: rgba(0,0,0,0.05);
+      font-size: clamp(14px, 3vw, 32px);
+      white-space: pre-wrap;
+      line-height: 2em;
+      overflow: hidden;
+      text-align: center;
+      padding: 2vw;
+    }
+
+    #game {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+    }
+
+    #tyler {
+      position: absolute;
+      bottom: 3vh;
+      left: 50%;
+      transform: translateX(-50%);
+      width: clamp(60px, 20vw, 120px);
+      transition: transform 0.1s;
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    .brick {
+      position: absolute;
+      width: clamp(35px, 8vw, 50px);
+      z-index: 2;
+    }
+
+    .enemy, .bad {
+      position: absolute;
+      width: clamp(50px, 16vw, 70px);
+      z-index: 2;
+    }
+
+    .peach {
+      width: clamp(40px, 10vw, 60px) !important;
+    }
+
+    .boom {
+      animation: boomAnim 0.5s forwards;
+    }
+
+    @keyframes boomAnim {
+      0% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(2);
+        opacity: 0;
+      }
+    }
+
+    #scoreboard, #lives {
+      position: absolute;
+      font-size: clamp(16px, 2vw, 24px);
+      font-family: sans-serif;
+      background: rgba(255,255,255,0.6);
+      padding: 0.5em 1em;
+      border-radius: 10px;
+      z-index: 1000;
+    }
+
+    #scoreboard {
+      top: 1vh;
+      left: 2vw;
+    }
+
+    #lives {
+      top: 1vh;
+      right: 2vw;
+    }
+
+    #startButton, #result {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: clamp(16px, 3vw, 22px);
+      padding: 0.7em 1.4em;
+      background: linear-gradient(179deg, #2f252494, #4b3f2f59);
+      color: #d1cdcd;
+      border: 2px solid #101010d1;
+      border-radius: 30px;
+      cursor: pointer;
+      z-index: 1001;
+      box-shadow: 8px 8px 16px rgba(0,0,0,0.15);
+      transition: transform 0.3s ease;
+      text-align: center;
+      /* font-family: 'Comic Sans MS', sans-serif; */
+    }
+
+    #startButton {
+      border: 2px solid #9c3204;
+      background: #e13d1e;
+      box-shadow:
+        inset 1px 1px 2px rgba(255, 255, 255, 0.8),
+        4px 4px 8px rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+      font-weight: 900;
+    }
+
+
+    #result button:hover {
+      box-shadow:
+        inset 1px 1px 2px rgba(255, 255, 255, 0.8),
+        4px 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    #startButton:hover {
+      transform: translate(-50%, -50%) scale(1.06);
+      box-shadow:
+        inset 1px 1px 2px rgba(255, 255, 255, 0.8),
+        4px 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    #result {
+      display: none;
+      background-color: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 4vw;
+      text-align: center;
+      max-width: 90vw;
+      border-radius: 20px;
+      box-shadow:
+        0 0 10px rgba(0, 0, 0, 0.6);
+    }
+
+    #result button {
+      margin-top: 3vh;
+      font-size: clamp(16px, 2.5vw, 20px);
+      padding: 0.6em 1.2em;
+      border-radius: 10px;
+      border: 2px solid #9c3204;
+      background: #e13d1e;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.2s;
+      box-shadow:
+        inset 1px 1px 2px rgba(255, 255, 255, 0.8),
+        4px 4px 8px rgba(0, 0, 0, 0.2);
+      /* font-family: 'Comic Sans MS', normal, sans-serif; */
+      font-weight: 600;
+    }
+
+    #result button:hover {
+      background: #ff5c82;
+    }
+
+    .red-flash {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 0, 0, 0.5);
+      z-index: 10000;
+      pointer-events: none;
+      animation: redFlashAnim 0.7s forwards;
+    }
+
+    .special {
+      position: absolute;
+      width: clamp(50px, 18vw, 70px);
+      z-index: 2;
+      filter: drop-shadow(0 0 5px gold);
+    }
+
+    @keyframes boomAnim {
+      0%   { transform: scale(1); opacity: 1; }
+      100% { transform: scale(3); opacity: 0; }
+    }
+    .boom {
+      animation: boomAnim 0.6s forwards;
+    }
+
+    @keyframes redFlashAnim {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+
+  </style>
+  <script async src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+
+<!-- <body>
+  <div id="background-text"></div>
+  <div id="game">
+    <div id="scoreboard">Points: 0</div>
+    <div id="lives">Lives: 3</div>
+    <img id="tyler" src="./tyler.png" />
+    <button id="startButton">Start the game</button>
+    <div id="result"></div>
+    <audio id="bgMusic" src="./Pixies - Where Is My Mind.mp3" loop></audio>
+  </div>
+
+  <script>
+    const game = document.getElementById("game");
+    const tyler = document.getElementById("tyler");
+    const scoreboard = document.getElementById("scoreboard");
+    const livesDisplay = document.getElementById("lives");
+    const startButton = document.getElementById("startButton");
+    const result = document.getElementById("result");
+    const music = document.getElementById("bgMusic");
+    const background = document.getElementById("background-text");
+
+    let score = 0;
+    let lives = 3;
+    let gameInterval;
+    let badCharacterInterval;
+    let gameOver = false;
+
+
+    function triggerRedEffect() {
+      const redDiv = document.createElement("div");
+      redDiv.classList.add("red-flash");
+      document.body.appendChild(redDiv);
+      setTimeout(() => {
+        redDiv.remove();
+      }, 300);
+    }
+
+    function startGame() {
+      score = 0;
+      lives = 3;
+      scoreboard.textContent = "Points: 0";
+      livesDisplay.textContent = "Lives: 3";
+      result.style.display = "none";
+      startButton.style.display = "none";
+      gameOver = false;
+      music.currentTime = 0;
+      music.play();
+      gameInterval = setInterval(spawnEnemy, 1500);
+      badCharacterInterval = setInterval(spawnBadCharacter, 5000);
+    }
+
+    function launchbrickFireworks() {
+      for (let i = 0; i < 20; i++) {
+        const brick = document.createElement("img");
+        brick.src = "./brick.png";
+        brick.classList.add("brick");
+        brick.style.left = (window.innerWidth / 2) + "px";
+        brick.style.top = (window.innerHeight / 2) + "px";
+        game.appendChild(brick);
+
+        const angle = Math.random() * 2 * Math.PI;
+        const speed = 3 + Math.random() * 3;
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed;
+
+        let x = window.innerWidth / 2;
+        let y = window.innerHeight / 2;
+
+        const interval = setInterval(() => {
+          x += vx * 5;
+          y += vy * 5;
+          brick.style.left = x + "px";
+          brick.style.top = y + "px";
+          brick.style.opacity = parseFloat(brick.style.opacity || 1) - 0.02;
+
+          if (
+            x < 0 ||
+            x > window.innerWidth ||
+            y < 0 ||
+            y > window.innerHeight ||
+            parseFloat(brick.style.opacity) <= 0
+          ) {
+            clearInterval(interval);
+            brick.remove();
+          }
+        }, 16);
+      }
+    }
+
+    function endGame() {
+      clearInterval(gameInterval);
+      clearInterval(badCharacterInterval);
+      gameOver = true;
+      music.pause();
+      document.querySelectorAll(".enemy, .brick, .bad").forEach(el => el.remove());
+      result.style.display = "block";
+      result.innerHTML = `
+        <h2>Game over!</h2>
+        <p>Your result: <strong>${score}</strong></p>
+        <button onclick='startGame()'>Play it again</button>
+      `;
+      launchbrickFireworks();
+    }
+
+    function spawnEnemy() {
+      const enemy = document.createElement("img");
+      const enemyImages = ["./pepe.png", "./cap.png", "./peach.png"];
+      const chosen = enemyImages[Math.floor(Math.random() * enemyImages.length)];
+      enemy.src = chosen;
+      enemy.classList.add("enemy");
+      if (chosen.indexOf("peach.png") !== -1) {
+        enemy.classList.add("peach");
+      }
+      enemy.dataset.hit = "false";
+      const startX = Math.random() * (window.innerWidth - 100);
+      enemy.style.left = startX + "px";
+      enemy.style.top = "0px";
+      game.appendChild(enemy);
+
+      let y = 0;
+      const fallInterval = setInterval(() => {
+        if (gameOver) {
+          clearInterval(fallInterval);
+          return;
+        }
+        y += 1.5;
+        enemy.style.top = y + "px";
+
+        if (y > window.innerHeight - 100) {
+          clearInterval(fallInterval);
+          enemy.remove();
+          lives--;
+          triggerRedEffect()
+          livesDisplay.textContent = `Lives: ${lives}`;
+          if (lives <= 0) endGame();
+        }
+      }, 16);
+
+      enemy.dataset.interval = fallInterval;
+    }
+
+    function spawnBadCharacter() {
+      const bad = document.createElement("img");
+      bad.src = "./bear.png";
+      bad.classList.add("bad");
+      bad.dataset.hit = "false";
+      const startX = Math.random() * (window.innerWidth - 100);
+      bad.style.left = startX + "px";
+      bad.style.top = "0px";
+      game.appendChild(bad);
+
+      let y = 0;
+      const fallInterval = setInterval(() => {
+        if (gameOver) {
+          clearInterval(fallInterval);
+          return;
+        }
+        y += 0.9;
+        bad.style.top = y + "px";
+
+        if (y > window.innerHeight) {
+          clearInterval(fallInterval);
+          bad.remove();
+        }
+      }, 16);
+
+      bad.dataset.interval = fallInterval;
+    }
+
+    game.addEventListener("click", (e) => {
+      if (gameOver || e.target.id === "startButton") return;
+
+      const brick = document.createElement("img");
+      brick.src = "./brick.png";
+      brick.classList.add("brick");
+
+      const tylerRect = tyler.getBoundingClientRect();
+      const startX = tylerRect.left + 30;
+      const startY = tylerRect.top + 10;
+
+      const targetX = e.clientX;
+      const targetY = e.clientY;
+
+      brick.style.left = startX + "px";
+      brick.style.top = startY + "px";
+      game.appendChild(brick);
+
+      const dx = targetX - startX;
+      const dy = targetY - startY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const speed = 8;
+      const vx = (dx / distance) * speed;
+      const vy = (dy / distance) * speed;
+
+      const interval = setInterval(() => {
+        const rect = brick.getBoundingClientRect();
+        let x = rect.left + vx;
+        let y = rect.top + vy;
+
+        brick.style.left = x + "px";
+        brick.style.top = y + "px";
+
+        document.querySelectorAll(".enemy, .bad").forEach((target) => {
+          const targetRect = target.getBoundingClientRect();
+          const brickRect = brick.getBoundingClientRect();
+
+          if (
+            target.dataset.hit !== "true" &&
+            brickRect.left < targetRect.right &&
+            brickRect.right > targetRect.left &&
+            brickRect.top < targetRect.bottom &&
+            brickRect.bottom > targetRect.top
+          ) {
+            clearInterval(interval);
+            clearInterval(parseInt(target.dataset.interval));
+            target.classList.add("boom");
+            target.dataset.hit = "true";
+            brick.classList.add("boom");
+
+            if (target.classList.contains("enemy")) {
+              score++;
+              scoreboard.textContent = `Points: ${score}`;
+            } else if (target.classList.contains("bad")) {
+              lives--;
+              livesDisplay.textContent = `Lives: ${lives}`;
+              triggerRedEffect();
+              if (lives <= 0) {
+                endGame();
+              }
+            }
+            setTimeout(() => {
+              target.remove();
+              brick.remove();
+            }, 500);
+          }
+        });
+
+        if (
+          x < 0 ||
+          x > window.innerWidth ||
+          y < 0 ||
+          y > window.innerHeight
+        ) {
+          clearInterval(interval);
+          brick.remove();
+        }
+      }, 16);
+    });
+
+    startButton.addEventListener("click", startGame);
+
+    if (window.Telegram && Telegram.WebApp) {
+      Telegram.WebApp.ready();
+    }
+  </script>
+</body> -->
+<body>
+  <button onclick="location.href='menu.html'" style="position:absolute;top:1rem;left:1rem;">
+    ← Меню
+  </button>
+  <div id="background-text"></div>
+  <div id="game">
+    <div id="scoreboard">Points: 0</div>
+    <div id="lives">Lives: 3</div>
+    <img id="tyler" src="./tyler.png"/>
+    <button id="startButton">Start the game</button>
+    <div id="result"></div>
+    <audio id="bgMusic" src="./Pixies - Where Is My Mind.mp3" loop></audio>
+  </div>
+
+  <script>
+    // (function initGame(){
+      const game = document.getElementById("game");
+      const tyler = document.getElementById("tyler");
+      const scoreEl = document.getElementById("scoreboard");
+      const livesEl = document.getElementById("lives");
+      const startBtn = document.getElementById("startButton");
+      const result = document.getElementById("result");
+      const music = document.getElementById("bgMusic");
+
+      let score = 0, lives = 3, gameInterval, badInterval, specialTimeout, gameOver = false;
+
+      function triggerRed() {
+        const d = document.createElement("div");
+        d.classList.add("red-flash");
+        document.body.appendChild(d);
+        setTimeout(()=>d.remove(), 300);
+      }
+
+      function startGame(){
+        score = 0; lives = 3; gameOver = false;
+        scoreEl.textContent = `Points: ${score}`;
+        livesEl.textContent = `Lives: ${lives}`;
+        result.style.display = "none";
+        startBtn.style.display = "none";
+        music.currentTime = 0; music.play();
+
+        gameInterval = setInterval(spawnEnemy, 1500);
+        badInterval  = setInterval(spawnBad, 5000);
+        scheduleSpecial();
+      }
+
+      function endGame(){
+        clearInterval(gameInterval);
+        clearInterval(badInterval);
+        clearTimeout(specialTimeout);
+        gameOver = true;
+        music.pause();
+        document.querySelectorAll(".enemy,.bad,.special")
+          .forEach(el=>el.remove());
+        result.innerHTML = `
+          <h2>Game Over!</h2>
+          <p>Your score: <strong>${score}</strong></p>
+          <button onclick="startGame()">Play Again</button>
+          <button onclick="location.href='index.html'">Menu</button>
+        `;
+        result.style.display = "block";
+        launchbrickFireworks();
+      }
+
+      // Планируем выпадение спец-врага через 30–60 сек
+      function scheduleSpecial(){
+        const delay = 0 + Math.random()*30000;
+        specialTimeout = setTimeout(()=>{
+          if(!gameOver) spawnSpecial();
+        }, delay);
+      }
+
+      function spawnSpecial(){
+        const s = document.createElement("img");
+        s.src = "./shard.png";       
+        s.classList.add("special");
+        s.dataset.hit = "false";
+        s.style.left = Math.random()*(window.innerWidth-100)+"px";
+        s.style.top  = "0";
+        game.appendChild(s);
+
+        let y=0;
+        const iv = setInterval(()=>{
+          if(gameOver){ clearInterval(iv); return; }
+          y += 5;                
+          s.style.top = y+"px";
+          if(y>window.innerHeight){
+            clearInterval(iv);
+            s.remove();
+            scheduleSpecial();
+          }
+        }, 16);
+        s.dataset.interval = iv;
+      }
+
+      function spawnEnemy(){
+        const img = ["./pepe.png","./cap.png","./peach.png"];
+        const e = document.createElement("img");
+        const pick = img[Math.floor(Math.random()*img.length)];
+        e.src = pick;
+        e.classList.add("enemy");
+        if(pick.includes("peach")) e.classList.add("peach");
+
+        e.dataset.hit = "false";
+        e.style.left = Math.random()*(window.innerWidth-100)+"px";
+        e.style.top  = "0";
+        game.appendChild(e);
+
+        let y=0, speed=1.5;
+        const iv = setInterval(()=>{
+          if(gameOver){ clearInterval(iv); return; }
+          y += speed; e.style.top=y+"px";
+          if(y>window.innerHeight-100){
+            clearInterval(iv);
+            e.remove();
+            lives--; triggerRed();
+            livesEl.textContent = `Lives: ${lives}`;
+            if(lives<=0) endGame();
+          }
+        },16);
+        e.dataset.interval = iv;
+      }
+
+      function spawnBad(){
+        const b = document.createElement("img");
+        b.src = "./bear.png"; b.classList.add("bad");
+        b.dataset.hit = "false";
+        b.style.left = Math.random()*(window.innerWidth-100)+"px";
+        b.style.top  = "0";
+        game.appendChild(b);
+
+        let y=0; const iv = setInterval(()=>{
+          if(gameOver){ clearInterval(iv); return; }
+          y+=0.9; b.style.top=y+"px";
+          if(y>window.innerHeight){
+            clearInterval(iv);
+            b.remove();
+          }
+        },16);
+        b.dataset.interval = iv;
+      }
+
+      game.addEventListener("click",(e)=>{
+        if(gameOver||e.target===startBtn) return;
+        const brick = document.createElement("img");
+        brick.src = "./brick.png";
+        brick.classList.add("brick");
+        const r = tyler.getBoundingClientRect(),
+              sx = r.left+30, sy=r.top+10;
+        const tx = e.clientX, ty=e.clientY;
+        brick.style.left = sx+"px";
+        brick.style.top  = sy+"px";
+        game.appendChild(brick);
+
+        const dx=tx-sx, dy=ty-sy, dist=Math.hypot(dx,dy),
+              vx=dx/dist*8, vy=dy/dist*8;
+
+        const iv = setInterval(()=>{
+          const cr = brick.getBoundingClientRect();
+          let x=cr.left+vx, y=cr.top+vy;
+          brick.style.left=x+"px";
+          brick.style.top =y+"px";
+
+          document.querySelectorAll(".enemy, .bad, .special").forEach(t=>{
+            const tr = t.getBoundingClientRect(),
+                  br = brick.getBoundingClientRect();
+            if(t.dataset.hit==="false"
+              && br.left<tr.right && br.right>tr.left
+              && br.top<tr.bottom && br.bottom>tr.top
+            ){
+              clearInterval(iv);
+              clearInterval(parseInt(t.dataset.interval));
+              t.dataset.hit="true";
+              t.classList.add("boom");
+              brick.classList.add("boom");
+
+              if(t.classList.contains("special")){
+                const allGood = document.querySelectorAll(".enemy, .special");
+                const points  = allGood.length;
+                score += points;
+                scoreEl.textContent = `Points: ${score}`;
+        
+                document.querySelectorAll(".enemy, .bad, .special")
+                  .forEach(el=>{
+                    clearInterval(parseInt(el.dataset.interval));
+                    el.classList.add("boom");
+                    setTimeout(()=>el.remove(), 600);
+                  });
+              }
+              else if(t.classList.contains("enemy")){
+                score++; scoreEl.textContent=`Points: ${score}`;
+              }
+              else if(t.classList.contains("bad")){
+                lives--; livesEl.textContent=`Lives: ${lives}`;
+                triggerRed();
+                if(lives<=0) endGame();
+              }
+
+              if(t.classList.contains("special")) scheduleSpecial();
+
+              setTimeout(()=>brick.remove(), 600);
+            }
+          });
+
+          if(x<0||x>innerWidth||y<0||y>innerHeight){
+            clearInterval(iv);
+            brick.remove();
+          }
+        },16);
+      });
+
+      startBtn.addEventListener("click", startGame);
+      if(window.Telegram?.WebApp) Telegram.WebApp.ready();
+    // })();
+  </script>
+</body>
+</html>
