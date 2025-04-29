@@ -285,7 +285,7 @@
 </html> -->
 
 
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
@@ -628,6 +628,367 @@
   </script>
 </body>
 </html>
+ -->
 
+
+
+ <!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Catch the Soap</title>
+  <style>
+    /* ─── ОТМЕНА ВЫДЕЛЕНИЯ И ПОДСВЕТКИ ─── */
+    * {
+      margin:0; padding:0; box-sizing:border-box;
+      -webkit-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button, .touch-btn {
+      outline: none;
+    }
+    #game {
+      touch-action: none; /* запрет системных жестов внутри игры */
+    }
+
+    /* ─── ОСНОВНЫЕ СТИЛИ ─── */
+    body,html { width:100%; height:100%; overflow:hidden; font-family:sans-serif }
+    #game {
+      position:relative;
+      width:100vw; height:100vh;
+      background-repeat:repeat;
+      background-image:url('./background3.png');
+      background-position:center;
+      background-size:300px;
+    }
+    #platform {
+      position:absolute; top:130px; left:0;
+      width:100%; height:9px;
+      background:url('./iron.png') center/contain repeat;
+      box-shadow:11px 17px 5px 0px rgba(0,0,0,0.3);
+      z-index:400;
+    }
+    #floor {
+      position:absolute; bottom:0px; left:0;
+      width:100%; height:26px;
+      background:url('./stone5.png') center/contain repeat;
+      box-shadow:inset -2px -9px 6px 8px rgba(0,0,0,0.5);
+      z-index:400;
+    }
+    #thrower, #player {
+      position:absolute; user-select:none; pointer-events:none; z-index:450;
+    }
+    #thrower {
+      top:40px; left:50%; transform:translateX(-50%);
+      width:40px; height:90px;
+    }
+    #player {
+      bottom:20px; left:50%; transform:translateX(-50%);
+      width:50px; height:100px;
+    }
+    .item {
+      position:absolute; width:30px; height:30px; pointer-events:none; z-index:500;
+    }
+    #score,#lives {
+      position:absolute; top:10px;
+      padding:5px 10px;
+      background:rgba(0,0,0,0.5); color:#fff; border-radius:4px;
+      font-size:1.2rem; z-index:1001;
+    }
+    #score { left:10px }
+    #lives { right:10px }
+
+    /* красный флэш и оверлей — без изменений */
+    .red-flash {
+      position:fixed; top:0; left:0; width:100%; height:100%;
+      background:rgba(255,0,0,0.4); pointer-events:none;
+      animation:redFade .4s ease-out forwards; z-index:1002;
+    }
+    @keyframes redFade { to{ opacity:0 } }
+    #overlay {
+      position:absolute; top:0; left:0; width:100%; height:100%;
+      background:rgba(0,0,0,0.7);
+      display:flex; flex-direction:column; justify-content:center; align-items:center;
+      color:#fff; font-size:2.5rem; visibility:visible; z-index:1003;
+    }
+    #overlay button {
+      margin-top:1rem; padding:.6rem 1.2rem;
+      font-size:24px; cursor:pointer;
+      border:none; border-radius:8px;
+      background:#18110d; color:#bababa;
+    }
+    #overlay button:hover { background:#5e81ac }
+    .back-btn {
+      position:absolute; top:10px; left:50%; transform:translateX(-50%);
+      padding:5px 10px; background:#4c566a; color:#eceff4;
+      border:none; border-radius:4px; cursor:pointer; z-index:1004;
+    }
+    #overlay_box {
+      background-color:rgba(76,77,77,0.27);
+      display:flex; flex-direction:column; align-items:center;
+      padding:32px; border-radius:16px; border:2px solid grey;
+    }
+
+    /* кнопки тач (скрыты на десктопе) */
+    .touch-btn {
+      position:absolute; bottom:5vh;
+      width:20vw; height:20vw;
+      background:rgba(0,0,0,0.2);
+      border-radius:50%;
+      z-index:1005;
+      display:none;
+    }
+    #btnLeft { left:5vw }
+    #btnRight { right:5vw }
+
+    /* === Адаптация для мобилок === */
+    @media (max-width: 768px) {
+      #game { background-size:60vw }
+
+      /* УВЕЛИЧИЛ спрайты */
+      #thrower {
+        width:18vw;
+        height:calc(18vw*(90/40));
+      }
+      #player {
+        width:22vw;
+        height:calc(22vw*(100/50));
+        bottom:6vh;
+      }
+      /* УВЕЛИЧИЛ предметы */
+      .item {
+        width:12vw; height:12vw;
+      }
+      /* УВЕЛИЧИЛ HUD */
+      #score,#lives {
+        font-size:5vw;
+        padding:3vw 4vw;
+      }
+      /* Кнопки тач крупнее */
+      .touch-btn {
+        width:25vw; height:25vw;
+        display: block;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="game">
+    <div id="platform"></div>
+    <div id="floor"></div>
+    <div id="score">Points: 0</div>
+    <div id="lives">Lives: 3</div>
+    <img id="thrower" src="run1.png" alt="Thrower">
+    <img id="player"  src="idle.png" alt="Player">
+    <div id="overlay">
+      <div id="overlay_box">
+        <div id="finalText">Catch the Soap</div>
+        <button id="btnStart">Start the game</button>
+        <button id="btnRestart" style="display:none;">Play again</button>
+        <button onclick="location.href='index.html'">Return to menu</button>
+      </div>
+    </div>
+    <audio id="bgMusic" src="./Pixies - Where Is My Mind.mp3" loop></audio>
+    <div id="btnLeft" class="touch-btn"></div>
+    <div id="btnRight" class="touch-btn"></div>
+  </div>
+
+  <script>
+    const game     = document.getElementById('game');
+    const platform = document.getElementById('platform');
+    const thrower  = document.getElementById('thrower');
+    const player   = document.getElementById('player');
+    const scoreEl  = document.getElementById('score');
+    const livesEl  = document.getElementById('lives');
+    const overlay  = document.getElementById('overlay');
+    const startBtn = document.getElementById('btnStart');
+    const restart  = document.getElementById('btnRestart');
+    const music    = document.getElementById('bgMusic');
+    const btnLeft  = document.getElementById('btnLeft');
+    const btnRight = document.getElementById('btnRight');
+
+    const playerW = 50, throwerW = 40;
+    let W = innerWidth, H = innerHeight;
+    let px = W/2 - playerW/2, tx = W/2 - throwerW/2;
+    let tvx = 3, score = 0, lives = 3, gameOver = false, startTime = 0;
+    let difficultyMultiplier = 1;
+    const items = [], keys = {};
+    const idleFrame = 'idle.png';
+    const stepFrames = ['step1.png','step2.png'];
+    let stepIdx = 0, lastStepTime = 0;
+
+    function updatePlayerSprite(now) {
+      if (keys['ArrowLeft']||keys['a']||keys['ArrowRight']||keys['d']) {
+        if (now - lastStepTime > 200) {
+          stepIdx = 1 - stepIdx;
+          player.src = stepFrames[stepIdx];
+          lastStepTime = now;
+        }
+      } else {
+        player.src = idleFrame;
+      }
+    }
+
+    const runFrames = ['run1.png','run2.png'];
+    let runFrameIdx = 0;
+    setInterval(()=>{
+      if (!gameOver) {
+        runFrameIdx = 1 - runFrameIdx;
+        thrower.src = runFrames[runFrameIdx];
+      }
+    },300);
+
+    window.addEventListener('keydown', e=> keys[e.key]=true);
+    window.addEventListener('keyup',   e=> keys[e.key]=false);
+
+    function flashRed(){
+      const f = document.createElement('div');
+      f.className = 'red-flash';
+      document.body.appendChild(f);
+      f.addEventListener('animationend', ()=> f.remove());
+    }
+
+    function spawnItem(){
+      if (gameOver) return;
+      const type = Math.random()<0.6 ? 'soap' : 'brick';
+      const img  = document.createElement('img');
+      img.src    = type==='soap' ? 'brick.png' : 'real-brick.png';
+      img.className = 'item';
+      game.appendChild(img);
+
+      // не вылезать за края
+      const itemW = img.offsetWidth;
+      let x0 = tx + throwerW/4 + Math.random()*(throwerW/2);
+      x0 = Math.max(0, Math.min(x0, W - itemW));
+
+      img.style.left = x0 + 'px';
+      img.style.top  = '120px';
+
+      items.push({ el:img, type, y:120, vy:(type==='brick'?6:4)*difficultyMultiplier });
+      setTimeout(spawnItem, (800 + Math.random()*700)/difficultyMultiplier);
+    }
+
+    function loop(now=0){
+      if (gameOver) return;
+      updatePlayerSprite(now);
+
+      if (startTime){
+        const elapsed = (now - startTime)/1000;
+        const minutes = Math.floor(elapsed/60);
+        difficultyMultiplier = Math.min(1 + minutes*0.4, 3.5);
+      }
+
+      // бросающий
+      tx += tvx * difficultyMultiplier;
+      if (tx < throwerW/2) { tx = throwerW/2; tvx *= -1; }
+      if (tx > W - throwerW/2) { tx = W - throwerW/2; tvx *= -1; }
+      thrower.style.left = tx + 'px';
+
+      // игрок
+      if (keys['ArrowLeft']||keys['a']) px -= 7;
+      if (keys['ArrowRight']||keys['d']) px += 7;
+      px = Math.max(playerW/2, Math.min(W - playerW/2, px));
+      player.style.left = px + 'px';
+
+      // предметы
+      for (let i = items.length - 1; i >= 0; i--){
+        const it = items[i];
+        it.y += it.vy;
+        it.el.style.top = it.y + 'px';
+        const pr = player.getBoundingClientRect();
+        const ir = it.el.getBoundingClientRect();
+        if (pr.left < ir.right && pr.right > ir.left && pr.top < ir.bottom && pr.bottom > ir.top){
+          if (it.type === 'soap'){
+            score++; scoreEl.textContent = `Points: ${score}`;
+          } else {
+            lives--; livesEl.textContent = `Lives: ${lives}`;
+            flashRed();
+            if (lives <= 0) return endGame();
+          }
+          it.el.remove(); items.splice(i,1);
+          continue;
+        }
+        if (it.y > H){
+          if (it.type === 'soap'){
+            lives--; livesEl.textContent = `Lives: ${lives}`;
+            flashRed();
+            if (lives <= 0) return endGame();
+          }
+          it.el.remove(); items.splice(i,1);
+        }
+      }
+
+      requestAnimationFrame(loop);
+    }
+
+    function endGame(){
+      gameOver = true;
+      document.getElementById('finalText').textContent = `Your score: ${score}`;
+      overlay.style.visibility = 'visible';
+      startBtn.style.display = 'none';
+      restart.style.display = 'block';
+      music.pause();
+    }
+
+    // старт
+    startBtn.onclick = ()=>{
+      overlay.style.visibility = 'hidden';
+      startBtn.style.display = 'none';
+      restart.style.display = 'none';
+      music.play();
+      score = 0; lives = 3; gameOver = false;
+      items.forEach(it=> it.el.remove());
+      items.length = 0;
+      scoreEl.textContent = 'Points: 0';
+      livesEl.textContent = 'Lives: 3';
+      px = W/2 - playerW/2; tx = px;
+      stepIdx = 0; lastStepTime = 0;
+      player.src = idleFrame;
+      startTime = performance.now();
+      spawnItem();
+      loop();
+    };
+
+    // рестарт
+    restart.onclick = startBtn.onclick;
+
+    // тач-управление
+    const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    if (isMobile){
+      btnLeft.style.display = btnRight.style.display = 'block';
+      ['touchstart','mousedown'].forEach(evt=>{
+        btnLeft.addEventListener(evt, ()=> keys['ArrowLeft']=true);
+        btnRight.addEventListener(evt, ()=> keys['ArrowRight']=true);
+      });
+      ['touchend','mouseup','touchcancel'].forEach(evt=>{
+        btnLeft.addEventListener(evt, ()=> keys['ArrowLeft']=false);
+        btnRight.addEventListener(evt, ()=> keys['ArrowRight']=false);
+      });
+      window.addEventListener('touchmove', e=>{
+        const x = e.touches[0].clientX;
+        keys['ArrowLeft']  = x < window.innerWidth/2;
+        keys['ArrowRight'] = x >= window.innerWidth/2;
+        e.preventDefault();
+      });
+      window.addEventListener('touchend', ()=> keys['ArrowLeft']=keys['ArrowRight']=false);
+    }
+
+    // выравниваем бросающего по платформе + обновляем W,H
+    function fixThrowerPosition(){
+      const g = game.getBoundingClientRect();
+      const p = platform.getBoundingClientRect();
+      thrower.style.top = (p.top - g.top - thrower.offsetHeight) + 'px';
+    }
+    ['load','resize','orientationchange'].forEach(evt=>{
+      window.addEventListener(evt, ()=>{
+        W = innerWidth; H = innerHeight;
+        fixThrowerPosition();
+      });
+    });
+  </script>
+</body>
+</html>
 
 
