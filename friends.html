@@ -800,26 +800,32 @@
       #game { background-size: 40vw; }
 
       /* платформа чуть выше */
-      #platform { top: 4vh; }
+      #platform { top: 10vh; }
 
       /* бросающий */
-      #thrower {
+      /* #thrower {
         width: 12vw;
-        height: calc(4vw * (90/40));
-        top: calc(4vh - 8vw * (90/40)); /* поднимаем вместе с платформой */
+        height: calc(12vw * (90/40));
+        top: calc(10vh - 12vw * (90/40)); /* поднимаем вместе с платформой */
+      } */
+
+      #thrower {
+        width: 30px;
+        height: calc(70px * (90/40));
+        top: calc(10vh - 12vw * (90/40)); /* поднимаем вместе с платформой */
       }
 
       /* игрок */
       #player {
         width: 15vw;
-        height: calc(10vw * (100/50));
+        height: calc(15vw * (100/50));
         bottom: 4vh;
       }
 
       /* предметы */
       .item {
-        width: 5vw;
-        height: 5vw;
+        width: 8vw;
+        height: 8vw;
       }
 
       /* HUD */
