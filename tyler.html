@@ -2,15 +2,24 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport"
+  content="width=device-width,
+           initial-scale=1,
+           maximum-scale=1,
+           user-scalable=no">
   <title>Tyler game</title>
   <link rel="icon" type="image/png" href="./tyler.png">
   <style>
-    * {
+     * {
+      margin:0; padding:0; box-sizing:border-box;
+      -webkit-user-select: none;
+      -ms-user-select: none;
       user-select: none;
-      -webkit-user-drag: none;
-      box-sizing: border-box;
-    }
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;      /* отключаем long-press меню */
+      -webkit-text-size-adjust: none;    /* фикс размера текста при зуме */
+      touch-action: none;    
+    }  
 
     html, body {
       margin: 0;
@@ -216,270 +225,31 @@
       to { opacity: 0; }
     }
 
+    #rotateOverlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.952);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+      font-size: 1.8rem;
+      text-align: center;
+      padding: 1rem;
+      z-index: 2000;
+    }
+    @media only screen and (max-width: 768px) and (orientation: landscape) {
+      #rotateOverlay {
+        display: flex;
+      }
+    }
+
   </style>
   <script async src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 
-<!-- <body>
-  <div id="background-text"></div>
-  <div id="game">
-    <div id="scoreboard">Points: 0</div>
-    <div id="lives">Lives: 3</div>
-    <img id="tyler" src="./tyler.png" />
-    <button id="startButton">Start the game</button>
-    <div id="result"></div>
-    <audio id="bgMusic" src="./Pixies - Where Is My Mind.mp3" loop></audio>
-  </div>
-
-  <script>
-    const game = document.getElementById("game");
-    const tyler = document.getElementById("tyler");
-    const scoreboard = document.getElementById("scoreboard");
-    const livesDisplay = document.getElementById("lives");
-    const startButton = document.getElementById("startButton");
-    const result = document.getElementById("result");
-    const music = document.getElementById("bgMusic");
-    const background = document.getElementById("background-text");
-
-    let score = 0;
-    let lives = 3;
-    let gameInterval;
-    let badCharacterInterval;
-    let gameOver = false;
-
-
-    function triggerRedEffect() {
-      const redDiv = document.createElement("div");
-      redDiv.classList.add("red-flash");
-      document.body.appendChild(redDiv);
-      setTimeout(() => {
-        redDiv.remove();
-      }, 300);
-    }
-
-    function startGame() {
-      score = 0;
-      lives = 3;
-      scoreboard.textContent = "Points: 0";
-      livesDisplay.textContent = "Lives: 3";
-      result.style.display = "none";
-      startButton.style.display = "none";
-      gameOver = false;
-      music.currentTime = 0;
-      music.play();
-      gameInterval = setInterval(spawnEnemy, 1500);
-      badCharacterInterval = setInterval(spawnBadCharacter, 5000);
-    }
-
-    function launchbrickFireworks() {
-      for (let i = 0; i < 20; i++) {
-        const brick = document.createElement("img");
-        brick.src = "./brick.png";
-        brick.classList.add("brick");
-        brick.style.left = (window.innerWidth / 2) + "px";
-        brick.style.top = (window.innerHeight / 2) + "px";
-        game.appendChild(brick);
-
-        const angle = Math.random() * 2 * Math.PI;
-        const speed = 3 + Math.random() * 3;
-        const vx = Math.cos(angle) * speed;
-        const vy = Math.sin(angle) * speed;
-
-        let x = window.innerWidth / 2;
-        let y = window.innerHeight / 2;
-
-        const interval = setInterval(() => {
-          x += vx * 5;
-          y += vy * 5;
-          brick.style.left = x + "px";
-          brick.style.top = y + "px";
-          brick.style.opacity = parseFloat(brick.style.opacity || 1) - 0.02;
-
-          if (
-            x < 0 ||
-            x > window.innerWidth ||
-            y < 0 ||
-            y > window.innerHeight ||
-            parseFloat(brick.style.opacity) <= 0
-          ) {
-            clearInterval(interval);
-            brick.remove();
-          }
-        }, 16);
-      }
-    }
-
-    function endGame() {
-      clearInterval(gameInterval);
-      clearInterval(badCharacterInterval);
-      gameOver = true;
-      music.pause();
-      document.querySelectorAll(".enemy, .brick, .bad").forEach(el => el.remove());
-      result.style.display = "block";
-      result.innerHTML = `
-        <h2>Game over!</h2>
-        <p>Your result: <strong>${score}</strong></p>
-        <button onclick='startGame()'>Play it again</button>
-      `;
-      launchbrickFireworks();
-    }
-
-    function spawnEnemy() {
-      const enemy = document.createElement("img");
-      const enemyImages = ["./pepe.png", "./cap.png", "./peach.png"];
-      const chosen = enemyImages[Math.floor(Math.random() * enemyImages.length)];
-      enemy.src = chosen;
-      enemy.classList.add("enemy");
-      if (chosen.indexOf("peach.png") !== -1) {
-        enemy.classList.add("peach");
-      }
-      enemy.dataset.hit = "false";
-      const startX = Math.random() * (window.innerWidth - 100);
-      enemy.style.left = startX + "px";
-      enemy.style.top = "0px";
-      game.appendChild(enemy);
-
-      let y = 0;
-      const fallInterval = setInterval(() => {
-        if (gameOver) {
-          clearInterval(fallInterval);
-          return;
-        }
-        y += 1.5;
-        enemy.style.top = y + "px";
-
-        if (y > window.innerHeight - 100) {
-          clearInterval(fallInterval);
-          enemy.remove();
-          lives--;
-          triggerRedEffect()
-          livesDisplay.textContent = `Lives: ${lives}`;
-          if (lives <= 0) endGame();
-        }
-      }, 16);
-
-      enemy.dataset.interval = fallInterval;
-    }
-
-    function spawnBadCharacter() {
-      const bad = document.createElement("img");
-      bad.src = "./bear.png";
-      bad.classList.add("bad");
-      bad.dataset.hit = "false";
-      const startX = Math.random() * (window.innerWidth - 100);
-      bad.style.left = startX + "px";
-      bad.style.top = "0px";
-      game.appendChild(bad);
-
-      let y = 0;
-      const fallInterval = setInterval(() => {
-        if (gameOver) {
-          clearInterval(fallInterval);
-          return;
-        }
-        y += 0.9;
-        bad.style.top = y + "px";
-
-        if (y > window.innerHeight) {
-          clearInterval(fallInterval);
-          bad.remove();
-        }
-      }, 16);
-
-      bad.dataset.interval = fallInterval;
-    }
-
-    game.addEventListener("click", (e) => {
-      if (gameOver || e.target.id === "startButton") return;
-
-      const brick = document.createElement("img");
-      brick.src = "./brick.png";
-      brick.classList.add("brick");
-
-      const tylerRect = tyler.getBoundingClientRect();
-      const startX = tylerRect.left + 30;
-      const startY = tylerRect.top + 10;
-
-      const targetX = e.clientX;
-      const targetY = e.clientY;
-
-      brick.style.left = startX + "px";
-      brick.style.top = startY + "px";
-      game.appendChild(brick);
-
-      const dx = targetX - startX;
-      const dy = targetY - startY;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      const speed = 8;
-      const vx = (dx / distance) * speed;
-      const vy = (dy / distance) * speed;
-
-      const interval = setInterval(() => {
-        const rect = brick.getBoundingClientRect();
-        let x = rect.left + vx;
-        let y = rect.top + vy;
-
-        brick.style.left = x + "px";
-        brick.style.top = y + "px";
-
-        document.querySelectorAll(".enemy, .bad").forEach((target) => {
-          const targetRect = target.getBoundingClientRect();
-          const brickRect = brick.getBoundingClientRect();
-
-          if (
-            target.dataset.hit !== "true" &&
-            brickRect.left < targetRect.right &&
-            brickRect.right > targetRect.left &&
-            brickRect.top < targetRect.bottom &&
-            brickRect.bottom > targetRect.top
-          ) {
-            clearInterval(interval);
-            clearInterval(parseInt(target.dataset.interval));
-            target.classList.add("boom");
-            target.dataset.hit = "true";
-            brick.classList.add("boom");
-
-            if (target.classList.contains("enemy")) {
-              score++;
-              scoreboard.textContent = `Points: ${score}`;
-            } else if (target.classList.contains("bad")) {
-              lives--;
-              livesDisplay.textContent = `Lives: ${lives}`;
-              triggerRedEffect();
-              if (lives <= 0) {
-                endGame();
-              }
-            }
-            setTimeout(() => {
-              target.remove();
-              brick.remove();
-            }, 500);
-          }
-        });
-
-        if (
-          x < 0 ||
-          x > window.innerWidth ||
-          y < 0 ||
-          y > window.innerHeight
-        ) {
-          clearInterval(interval);
-          brick.remove();
-        }
-      }, 16);
-    });
-
-    startButton.addEventListener("click", startGame);
-
-    if (window.Telegram && Telegram.WebApp) {
-      Telegram.WebApp.ready();
-    }
-  </script>
-</body> -->
 <body>
-  <button onclick="location.href='menu.html'" style="position:absolute;top:1rem;left:1rem;">
-    ← Меню
-  </button>
   <div id="background-text"></div>
   <div id="game">
     <div id="scoreboard">Points: 0</div>
@@ -488,6 +258,9 @@
     <button id="startButton">Start the game</button>
     <div id="result"></div>
     <audio id="bgMusic" src="./Pixies - Where Is My Mind.mp3" loop></audio>
+  </div>
+  <div id="rotateOverlay">
+    Please turn your device to landscape position to play
   </div>
 
   <script>
