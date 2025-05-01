@@ -744,7 +744,7 @@
     #btnLeft { left:5vw }
     #btnRight { right:5vw }
 
-    /* === Адаптация для мобилок === */
+
     /* @media (max-width: 768px) {
       #game { background-size:60vw }
 
@@ -794,50 +794,45 @@
       }
     }
 
-    /* 2) Ландшафт на мобилках: уменьшаем спрайты и поднимаем платформу с бросающим */
-    @media only screen and (max-width: 768px) and (orientation: landscape) {
-      /* фон делает чуть мельче */
-      #game { background-size: 40vw; }
-
-      /* платформа чуть выше */
-      #platform { top: 10vh; }
-
-      /* бросающий */
-      /* #thrower {
-        width: 12vw;
-        height: calc(12vw * (90/40));
-        top: calc(10vh - 12vw * (90/40)); /* поднимаем вместе с платформой */
-      } */
-
-      #thrower {
-        width: 30px;
-        height: calc(70px * (90/40));
-        top: calc(10vh - 12vw * (90/40)); /* поднимаем вместе с платформой */
+    @media only screen and (max-device-height: 768px) and (orientation: landscape) {
+    
+      #game { 
+        background-size: 25vw;
       }
 
-      /* игрок */
+
+      #platform { 
+        top: 18vh
+      }
+
+
+      #thrower {
+        width: 2vw;
+        height: calc(2vw * (90/40));
+        top: calc(18vh - 12vw * (90/40));
+      }
+
       #player {
-        width: 15vw;
-        height: calc(15vw * (100/50));
+        width: 3vw;
+        height: calc(3vw * (100/50));
         bottom: 4vh;
       }
 
-      /* предметы */
+
       .item {
-        width: 8vw;
-        height: 8vw;
+        width: 1.5vw;
+        height: 1.5vw;
       }
 
-      /* HUD */
+
       #score, #lives {
-        font-size: 4vw;
-        padding: 2vw 3vw;
+        font-size: 1vw;
+        padding: 1vw 1.5vw;
       }
 
-      /* кнопки управления */
       .touch-btn {
-        width: 20vw;
-        height: 20vw;
+        width: 15vw;
+        height: 15vw;
       }
     }
 
