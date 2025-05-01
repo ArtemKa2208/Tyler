@@ -136,7 +136,7 @@
       /* font-family: 'Comic Sans MS', sans-serif; */
     }
 
-    #startButton {
+    #startButton, #menuButton {
       border: 2px solid #9c3204;
       background: #e13d1e;
       box-shadow:
@@ -144,6 +144,21 @@
         4px 4px 8px rgba(0, 0, 0, 0.2);
       border-radius: 10px;
       font-weight: 900;
+    }
+
+    #menuButton {
+      position: absolute;
+      /* top: 0; */
+      bottom: 2vh;
+      left: 4vh;
+      font-size: clamp(16px, 3vw, 22px);
+      padding: 0.4em 1em;
+      color: #d1cdcd;
+      cursor: pointer;
+      z-index: 1001;
+      transition: transform 0.3s ease;
+      text-align: center;
+      /* transform: translate(-50%, -50%); */
     }
 
 
@@ -155,6 +170,13 @@
 
     #startButton:hover {
       transform: translate(-50%, -50%) scale(1.06);
+      box-shadow:
+        inset 1px 1px 2px rgba(255, 255, 255, 0.8),
+        4px 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    #menuButton:hover {
+      /* transform: translate(-50%, -50%) scale(1.06); */
       box-shadow:
         inset 1px 1px 2px rgba(255, 255, 255, 0.8),
         4px 4px 8px rgba(0, 0, 0, 0.2);
@@ -239,7 +261,7 @@
       padding: 1rem;
       z-index: 2000;
     }
-    @media only screen and (max-width: 768px) and (orientation: landscape) {
+    @media only screen and (max-height: 768px) and (orientation: landscape)  and (hover: none) and (pointer: coarse) {
       #rotateOverlay {
         display: flex;
       }
@@ -256,11 +278,12 @@
     <div id="lives">Lives: 3</div>
     <img id="tyler" src="./tyler.png"/>
     <button id="startButton">Start the game</button>
+    <button id="menuButton" onclick="location.href='index.html'">Menu</button>
     <div id="result"></div>
     <audio id="bgMusic" src="./Pixies - Where Is My Mind.mp3" loop></audio>
   </div>
   <div id="rotateOverlay">
-    Please turn your device to landscape position to play
+    Please turn your device to vertical position to play
   </div>
 
   <script>
@@ -270,6 +293,7 @@
       const scoreEl = document.getElementById("scoreboard");
       const livesEl = document.getElementById("lives");
       const startBtn = document.getElementById("startButton");
+      const menuBtn = document.getElementById("menuButton");
       const result = document.getElementById("result");
       const music = document.getElementById("bgMusic");
 
@@ -288,6 +312,7 @@
         livesEl.textContent = `Lives: ${lives}`;
         result.style.display = "none";
         startBtn.style.display = "none";
+        menuBtn.style.display = "none";
         music.currentTime = 0; music.play();
 
         gameInterval = setInterval(spawnEnemy, 1500);
