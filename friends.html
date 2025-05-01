@@ -652,7 +652,9 @@
       -webkit-tap-highlight-color: transparent;
       -webkit-touch-callout: none;      /* отключаем long-press меню */
       -webkit-text-size-adjust: none;    /* фикс размера текста при зуме */
-    }
+      touch-action: none;    
+    }  
+    
     button, .touch-btn {
       outline: none;
     }
@@ -878,7 +880,6 @@
     const music    = document.getElementById('bgMusic');
     const btnLeft  = document.getElementById('btnLeft');
     const btnRight = document.getElementById('btnRight');
-
     const playerW = 50, throwerW = 40;
     let W = innerWidth, H = innerHeight;
     let px = W/2 - playerW/2, tx = W/2 - throwerW/2;
@@ -888,6 +889,15 @@
     const idleFrame = 'idle.png';
     const stepFrames = ['step1.png','step2.png'];
     let stepIdx = 0, lastStepTime = 0;
+
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(event) {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) {
+          event.preventDefault();  // предотвращаем зум при двойном тапе
+      }
+      lastTouchEnd = now;
+    }, false);
 
     function updatePlayerSprite(now) {
       if (keys['ArrowLeft']||keys['a']||keys['ArrowRight']||keys['d']) {
@@ -937,10 +947,17 @@
       // img.style.top  = '120px';
       const gameRect     = game.getBoundingClientRect();
       const platformRect = platform.getBoundingClientRect();
-      const startY = platformRect.top - gameRect.top - img.offsetHeight;
+      const startY = platformRect.top;
       img.style.top = startY + 'px';
+      const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+      let speed = difficultyMultiplier;
 
-      items.push({ el:img, type, y:120, vy:(type==='brick'?6:4)*difficultyMultiplier });
+      if (isTouchDevice) {
+        speed = difficultyMultiplier * 0.6
+      }
+
+
+      items.push({ el:img, type, y:startY, vy:(type==='brick'?6:4)*speed});
       setTimeout(spawnItem, (800 + Math.random()*700)/difficultyMultiplier);
     }
 
